@@ -1,5 +1,6 @@
 import os
 import re
+import random
 
 from flask import Flask, jsonify, request
 from deep_translator import GoogleTranslator
@@ -8,17 +9,11 @@ import requests
 app = Flask(__name__)
 
 # ===== مفتاح الحماية =====
-# غيّر القيمة الافتراضية هنا لنفس القيمة اللي حطيتها بـ Secrets على
-# Creator Dashboard تبع روبلوكس (اسم السر: DOOR_API_KEY).
-# الأفضل أمنياً إنك تحطها كـ Environment Variable من إعدادات الـ Web App
-# بـ PythonAnywhere بدل ما تكتبها هنا مباشرة، لكن للتجربة السريعة تقدر
-# تكتبها هنا مؤقتاً.
-API_SECRET = os.environ.get("DOOR_API_KEY", "NETRO1122@")
+API_SECRET = os.environ.get("DOOR_API_KEY", "ضع_نفس_القيمة_هنا_مؤقتاً")
 
 
 @app.before_request
 def check_api_key():
-    # اسمح بمرور فحص الصحة بدون مفتاح، عشان تقدر تتأكد إن السيرفر شغّال
     if request.path == "/health":
         return
     provided_key = request.headers.get("X-Api-Key")
@@ -44,6 +39,10 @@ KEYWORD_EFFECTS = [
     {"words": ["minimalist", "flush door", "flat panel"],
      "effect": {"ornament": -0.2, "glassRatio": -0.1}},
     {"words": ["oak", "walnut", "mahogany", "timber"], "effect": {"material": "Wood"}},
+    # جديد: يغطي طلبات النيون/الإضاءة — يغيّر المادة واللون فعلياً (مو بس الزخرفة)
+    {"words": ["neon", "neon sign", "neon light", "glowing", "glow", "led light", "fluorescent"],
+     "effect": {"material": "Neon", "ornament": -0.15,
+                "colorOptions": ["Cyan", "Electric blue", "Hot pink", "Lime green", "New Yeller"]}},
 ]
 
 
@@ -83,6 +82,7 @@ def extract_style_hints(snippets):
     frame_style_vote = None
     material_vote = None
     hinge_vote = None
+    color_vote = None
     is_double_vote = False
 
     for entry in KEYWORD_EFFECTS:
@@ -99,6 +99,8 @@ def extract_style_hints(snippets):
                     material_vote = e["material"]
                 if "hingeMaterial" in e:
                     hinge_vote = e["hingeMaterial"]
+                if "colorOptions" in e:
+                    color_vote = random.choice(e["colorOptions"])
                 if e.get("isDouble"):
                     is_double_vote = True
                 break
@@ -110,6 +112,7 @@ def extract_style_hints(snippets):
         "frameStyleHint": frame_style_vote,
         "materialHint": material_vote,
         "hingeMaterialHint": hinge_vote,
+        "colorHint": color_vote,
         "isDoubleHint": is_double_vote,
         "keywordsFound": found_words,
         "hasSignal": len(found_words) > 0,
@@ -154,3 +157,4 @@ def health():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
