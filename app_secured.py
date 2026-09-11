@@ -45,6 +45,37 @@ KEYWORD_EFFECTS = [
                 "colorOptions": ["Cyan", "Electric blue", "Hot pink", "Lime green", "New Yeller"]}},
 ]
 
+# قاموس ألوان عام ومستقل عن الأنماط أعلاه — لأن أي كلمة لون شائعة (gold, red, blue...)
+# لازم تفعّل تغيير اللون بغض النظر إذا كانت مرتبطة بمادة معينة أو لا.
+# المفاتيح الأطول (عبارتين) تُفحص أولاً حتى ما يبلع "blue" تطابق جزئي من "dark blue".
+COLOR_WORDS = {
+    "dark blue": "Navy blue", "dark green": "Dark green", "dark grey": "Dark stone grey",
+    "dark gray": "Dark stone grey", "light blue": "Pastel blue", "light grey": "Light stone grey",
+    "light gray": "Light stone grey",
+    "gold": "Gold", "golden": "Gold",
+    "silver": "Silver", "silvery": "Silver",
+    "white": "Institutional white", "ivory": "Institutional white", "cream": "Cool yellow",
+    "black": "Really black", "ebony": "Really black",
+    "red": "Really red", "crimson": "Crimson", "maroon": "Maroon",
+    "blue": "Bright blue", "navy": "Navy blue", "azure": "Cyan", "cyan": "Cyan", "turquoise": "Cyan",
+    "green": "Bright green", "emerald": "Bright green", "lime": "Lime green",
+    "brown": "Brown", "chocolate": "Brown", "beige": "Wheat", "tan": "Tan",
+    "pink": "Hot pink", "magenta": "Magenta",
+    "purple": "Royal purple", "violet": "Bright violet", "lavender": "Lavender",
+    "orange": "Bright orange", "amber": "Neon orange",
+    "yellow": "New Yeller",
+    "grey": "Medium stone grey", "gray": "Medium stone grey", "charcoal": "Dark stone grey",
+    "copper": "Copper", "bronze": "Copper", "rust": "Rust", "rusty": "Rust",
+    "teal": "Teal",
+}
+
+
+def extract_color_hint(text):
+    for phrase in sorted(COLOR_WORDS.keys(), key=len, reverse=True):
+        if re.search(r"\b" + re.escape(phrase) + r"\b", text):
+            return phrase, COLOR_WORDS[phrase]
+    return None, None
+
 
 def safe_translate(query):
     # أغلب عمليات البحث بهذا المشروع أصلاً بالإنجليزي (Neon door, Gothic door...)
@@ -136,6 +167,12 @@ def extract_style_hints(snippets):
                     is_double_vote = True
                 break
 
+    # فحص الألوان العام: يشتغل بغض النظر إذا كانت الكلمات أعلاه انطبقت أو لا
+    if not color_vote:
+        color_word, color_vote = extract_color_hint(text)
+        if color_word:
+            found_words.append(color_word)
+
     return {
         "archRiseBias": clamp(bias["archRise"], 0, 0.3),
         "glassRatioBias": clamp(bias["glassRatio"], -0.3, 0.5),
@@ -183,4 +220,3 @@ def health():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
