@@ -46,6 +46,37 @@ KEYWORD_EFFECTS = [
 ]
 
 
+def safe_translate(query):
+    # أغلب عمليات البحث بهذا المشروع أصلاً بالإنجليزي (Neon door, Gothic door...)
+    # فنتجاوز الترجمة كلياً بهالحالة — أسرع وأكثر أماناً وما يعرضنا لحظر Google
+    if query.isascii():
+        return query
+
+    try:
+        translated = GoogleTranslator(source="auto", target="en").translate(query)
+    except Exception:
+        return query
+
+    if not translated:
+        return query
+
+    # حماية: أحياناً Google Translate يرجّع صفحة خطأ HTML بدل ترجمة فعلية
+    # (مثلاً لما يحظر الطلب من سيرفرات الاستضافة). نتأكد النتيجة منطقية
+    # قبل ما نثق فيها كـ"كلمة بحث"، وإلا نرجع للنص الأصلي.
+    lowered = translated.lower()
+    looks_broken = (
+        len(translated) > 150
+        or "error" in lowered
+        or "<html" in lowered
+        or "that’s an error" in lowered
+        or "that's an error" in lowered
+    )
+    if looks_broken:
+        return query
+
+    return translated
+
+
 def strip_html(s):
     return re.sub(r"<[^>]+>", "", s or "")
 
@@ -127,12 +158,7 @@ def inspiration():
     if len(query) > 200:
         query = query[:200]
 
-    try:
-        translated = GoogleTranslator(source="auto", target="en").translate(query)
-        if not translated:
-            translated = query
-    except Exception:
-        translated = query
+    translated = safe_translate(query)
 
     try:
         snippets = search_wikipedia(translated, limit=3, lang="en")
