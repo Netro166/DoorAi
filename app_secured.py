@@ -8,6 +8,10 @@ import requests
 
 app = Flask(__name__)
 
+# رقم نسخة بسيط — يساعدنا نتأكد بسرعة من "/health" إذا آخر تحديث وصل فعلاً
+# للسيرفر المنشور أو لا، بدون ما نخمن.
+APP_VERSION = "v3-colorwords"
+
 # ===== مفتاح الحماية =====
 API_SECRET = os.environ.get("DOOR_API_KEY", "ضع_نفس_القيمة_هنا_مؤقتاً")
 
@@ -215,7 +219,7 @@ def inspiration():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "version": APP_VERSION})
 
 
 if __name__ == "__main__":
